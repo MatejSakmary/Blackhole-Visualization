@@ -27,6 +27,7 @@ struct Context
 
     struct Pipelines
     {
+        std::shared_ptr<daxa::RasterPipeline> draw_field;
     };
 
     struct MainTaskList
@@ -44,7 +45,7 @@ struct Context
 
         struct TransientImages
         {
-            daxa::TaskImageHandle depth_buffer;
+            daxa::TaskImageHandle depth_buffer = {};
         };
 
         daxa::TaskList task_list;

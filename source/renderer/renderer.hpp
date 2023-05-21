@@ -32,7 +32,7 @@ struct Renderer
     private:
         Context context;
 
-        void create_main_tasklist();
+        void record_main_tasklist();
         void create_resolution_independent_resources();
         void create_resolution_dependent_resources();
 };

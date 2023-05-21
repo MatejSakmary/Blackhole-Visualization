@@ -1,6 +1,7 @@
 #include "renderer.hpp"
 
 #include <string>
+#include <functional>
 
 #include <imgui_impl_glfw.h>
 #include <daxa/utils/imgui.hpp>
@@ -36,6 +37,8 @@ Renderer::Renderer(const AppWindow & window) :
         },
         .name = "Pipeline Compiler",
     });
+    
+    context.pipelines.draw_field = context.pipeline_manager.add_raster_pipeline(get_draw_field_pipeline(context)).value();
 
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForVulkan(window.get_glfw_window_handle(), true);
@@ -46,15 +49,37 @@ Renderer::Renderer(const AppWindow & window) :
         .format = context.swapchain.get_format(),
     });
 
+    context.main_task_list.task_list = daxa::TaskList({
+        .device = context.device,
+        .swapchain = context.swapchain,
+        .reorder_tasks = true,
+        .use_split_barriers = true,
+        .jit_compile_permutations = true,
+        .permutation_condition_count = Context::MainTaskList::Conditionals::COUNT,
+        .name = "main task list"
+    });
+
     create_resolution_independent_resources();
     create_resolution_dependent_resources();
-    create_main_tasklist();
+    record_main_tasklist();
 }
 
 void Renderer::resize()
 {
     context.swapchain.resize();
+
+    context.main_task_list.task_list = daxa::TaskList({
+        .device = context.device,
+        .swapchain = context.swapchain,
+        .reorder_tasks = true,
+        .use_split_barriers = true,
+        .jit_compile_permutations = true,
+        .permutation_condition_count = Context::MainTaskList::Conditionals::COUNT,
+        .name = "main task list"
+    });
+
     create_resolution_dependent_resources();
+    record_main_tasklist();
 }
 
 void Renderer::update(const GuiState & state)
@@ -85,7 +110,7 @@ void Renderer::draw(const Camera & camera)
         context.main_task_list.conditionals.size()}
     });
     auto result = context.pipeline_manager.reload_all();
-    if(result.value()) 
+    if(result.has_value()) 
     {
         if (result.value().is_ok())
         {
@@ -100,7 +125,6 @@ void Renderer::draw(const Camera & camera)
 
 void Renderer::create_resolution_dependent_resources()
 {
-    
     auto extent = context.swapchain.get_surface_extent();
 
     context.main_task_list.transient_images.depth_buffer = context.main_task_list.task_list.create_transient_image({
@@ -113,6 +137,10 @@ void Renderer::create_resolution_dependent_resources()
 
 void Renderer::create_resolution_independent_resources()
 {
+    context.images.swapchain = daxa::TaskImage({
+        .swapchain_image = true,
+        .name = "persistent swapchain image"
+    });
     context.buffers.globals = daxa::TaskBuffer({
         .initial_buffers = {
             .buffers = std::array{
@@ -126,26 +154,27 @@ void Renderer::create_resolution_independent_resources()
     });
 }
 
-void Renderer::create_main_tasklist()
+void Renderer::record_main_tasklist()
 {
-    context.main_task_list.task_list = daxa::TaskList({
-        .device = context.device,
-        .swapchain = context.swapchain,
-        .reorder_tasks = true,
-        .use_split_barriers = true,
-        .jit_compile_permutations = true,
-        .permutation_condition_count = Context::MainTaskList::Conditionals::COUNT,
-        .name = "main task list"
-    });
-
-    context.main_task_list.task_list.use_persistent_buffer(context.buffers.globals); 
+    auto & tl = context.main_task_list.task_list;
+    tl.use_persistent_buffer(context.buffers.globals); 
+    tl.use_persistent_image(context.images.swapchain);
     /* ============================================================================================================ */
     /* ===============================================  TASKS  ==================================================== */
     /* ============================================================================================================ */
+    tl.add_task(DrawFieldTask{{
+        .uses = {
+            ._swapchain = context.images.swapchain.handle(),
+            ._depth = context.main_task_list.transient_images.depth_buffer.subslice(
+                {.image_aspect = daxa::ImageAspectFlagBits::DEPTH}
+            ),
+        }},
+        &context 
+    });
 
-    context.main_task_list.task_list.submit({});
-    context.main_task_list.task_list.present({});
-    context.main_task_list.task_list.complete({});
+    tl.submit({});
+    tl.present({});
+    tl.complete({});
 }
 
 Renderer::~Renderer()
