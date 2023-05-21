@@ -1,0 +1,22 @@
+{
+  "name": "blackhole-viz",
+  "version": "0.1.0",
+  "dependencies": [
+    "daxa",
+    "glfw3",
+    "glm",
+    {
+      "name": "imgui",
+      "features": [
+        "glfw-binding",
+        "docking-experimental"
+      ]
+    }
+  ],
+  "builtin-baseline": "a325228200d7f229f3337e612e0077f2a5307090",
+  "vcpkg-configuration": {
+    "overlay-ports": [
+      "../Daxa/cmake/vcpkg-port"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+.out*
+.vs*
+
+imgui.ini
+*.dot
+*.exr
+
+data/*
+!data/.gitkeep
+
+.idea
