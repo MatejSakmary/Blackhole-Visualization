@@ -13,6 +13,7 @@
 #include "shared/shared.inl"
 #include "context.hpp"
 
+#include "tasks/upload_data.inl"
 #include "tasks/draw_field.inl"
 
 using namespace daxa::types;
@@ -26,8 +27,7 @@ struct Renderer
     void update(const GuiState & state);
     void draw(const Camera & camera);
 
-    // TODO(msakmary) add get mapped pointer function
-    void get_staging_memory_pointer();
+    auto get_field_data_staging_pointer(u32 size) -> DataPoint*;
 
     private:
         Context context;

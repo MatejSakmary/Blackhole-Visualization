@@ -37,6 +37,8 @@ Renderer::Renderer(const AppWindow & window) :
         },
         .name = "Pipeline Compiler",
     });
+
+    context.main_task_list.conditionals.fill(false);
     
     context.pipelines.draw_field = context.pipeline_manager.add_raster_pipeline(get_draw_field_pipeline(context)).value();
 
@@ -121,6 +123,12 @@ void Renderer::draw(const Camera & camera)
             DEBUG_OUT(result.value().to_string());
         }
     } 
+
+    if(context.main_task_list.conditionals.at(MainConditionals::UPLOAD_DATA) == true)
+    {
+        context.device.destroy_buffer(context.buffers.field_data_staging.get_state().buffers[0]);
+        context.main_task_list.conditionals.at(MainConditionals::UPLOAD_DATA) = false;
+    }
 }
 
 void Renderer::create_resolution_dependent_resources()
@@ -135,12 +143,46 @@ void Renderer::create_resolution_dependent_resources()
     });
 }
 
+auto Renderer::get_field_data_staging_pointer(u32 size) -> DataPoint*
+{
+    context.buffers.field_data_staging.set_buffers({
+        .buffers = std::array{
+            context.device.create_buffer({
+                .size = size,
+                .allocate_info = daxa::AutoAllocInfo{daxa::MemoryFlagBits::HOST_ACCESS_RANDOM},
+                .name = "field data staging buffer"
+            })
+        },
+        .latest_access = daxa::Access{
+            .stages = daxa::PipelineStageFlagBits::HOST,
+            .type = daxa::AccessTypeFlagBits::READ
+        }
+    });
+
+    context.buffers.field_data.set_buffers({
+        .buffers = std::array{
+            context.device.create_buffer({
+                .size = size,
+                .allocate_info = daxa::AutoAllocInfo{daxa::MemoryFlagBits::DEDICATED_MEMORY},
+                .name = "field data buffer"
+            })
+        },
+    });
+
+    context.main_task_list.conditionals.at(Context::MainTaskList::Conditionals::UPLOAD_DATA) = true;
+    return context.device.get_host_address_as<DataPoint>(context.buffers.field_data_staging.get_state().buffers[0]);
+};
+
 void Renderer::create_resolution_independent_resources()
 {
     context.images.swapchain = daxa::TaskImage({
         .swapchain_image = true,
         .name = "persistent swapchain image"
     });
+
+    context.buffers.field_data_staging = daxa::TaskBuffer({ .name = "field data staging task buffer"});
+    context.buffers.field_data = daxa::TaskBuffer({ .name = "field data task buffer"});
+
     context.buffers.globals = daxa::TaskBuffer({
         .initial_buffers = {
             .buffers = std::array{
@@ -158,12 +200,29 @@ void Renderer::record_main_tasklist()
 {
     auto & tl = context.main_task_list.task_list;
     tl.use_persistent_buffer(context.buffers.globals); 
+    tl.use_persistent_buffer(context.buffers.field_data); 
+    tl.use_persistent_buffer(context.buffers.field_data_staging); 
     tl.use_persistent_image(context.images.swapchain);
     /* ============================================================================================================ */
     /* ===============================================  TASKS  ==================================================== */
     /* ============================================================================================================ */
+    tl.conditional({
+        .condition_index = 0,
+        .when_true = [&]()
+        {
+            tl.add_task(UploadDataTask{{
+                    .uses = {
+                        ._field_data_staging = context.buffers.field_data_staging.handle(),
+                        ._field_data = context.buffers.field_data.handle()
+                }},
+                &context
+            });
+        }
+    });
+
     tl.add_task(DrawFieldTask{{
         .uses = {
+            ._field_data = context.buffers.field_data.handle(),
             ._swapchain = context.images.swapchain.handle(),
             ._depth = context.main_task_list.transient_images.depth_buffer.subslice(
                 {.image_aspect = daxa::ImageAspectFlagBits::DEPTH}

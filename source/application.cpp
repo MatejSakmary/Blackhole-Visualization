@@ -165,22 +165,13 @@ void Application::process_input()
 
 void Application::load_data()
 {
-    struct DataPoint
-    {
-        f32vec3 pos;
-        f32vec3 val;
-    };
     constexpr i64 data_size = 512 * 512 * 512;
     constexpr i64 file_size = data_size * sizeof(DataPoint);
 
-    std::vector<DataPoint> data;
-    data.resize(data_size);
-
-    std::ifstream data_file("data/el3.bin", std::ios_base::binary);
+    std::ifstream data_file("data/data_bin/el2.bin", std::ios_base::binary);
     ASSERT_MSG(data_file, "[Application::load_data()] Unable to open file");
 
-    data_file.read(reinterpret_cast<char*>(data.data()), file_size);
-    std::cout << data.at(0).pos.x << std::endl;
+    data_file.read(reinterpret_cast<char*>(renderer.get_field_data_staging_pointer(file_size)), file_size);
     data_file.close();
 }
 

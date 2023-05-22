@@ -18,6 +18,8 @@ struct Context
     {
         Globals globals_cpu;
         daxa::TaskBuffer globals;
+        daxa::TaskBuffer field_data;
+        daxa::TaskBuffer field_data_staging;
     };
 
     struct Images
@@ -34,7 +36,7 @@ struct Context
     {
         enum Conditionals 
         {
-            CONDITIONAL = 0,
+            UPLOAD_DATA = 0,
             COUNT
         };
 
@@ -54,7 +56,6 @@ struct Context
         std::array<bool, Conditionals::COUNT> conditionals;
     };
 
-
     daxa::Context daxa_context;
     daxa::Device device;
     daxa::Swapchain swapchain;
@@ -69,3 +70,5 @@ struct Context
     MainTaskList main_task_list;
     Pipelines pipelines;
 };
+
+using MainConditionals = Context::MainTaskList::Conditionals;
