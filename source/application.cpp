@@ -4,6 +4,8 @@
 #include <imgui_impl_glfw.h>
 #include "renderer/context.hpp"
 
+#include <fstream>
+
 void Application::mouse_callback(f64 x, f64 y)
 {
     f32 x_offset;
@@ -105,6 +107,7 @@ Application::Application() :
         .fov = glm::radians(70.0f)
     }}
 {
+    load_data();
 }
 
 void Application::ui_update()
@@ -158,6 +161,27 @@ void Application::process_input()
         if(state.key_table.bits.CTRL)   { camera.move_camera(state.delta_time, Direction::DOWN);       }
         if(state.key_table.bits.SPACE)  { camera.move_camera(state.delta_time, Direction::UP);         }
     }
+}
+
+void Application::load_data()
+{
+    struct DataPoint
+    {
+        f32vec3 pos;
+        f32vec3 val;
+    };
+    constexpr i64 data_size = 512 * 512 * 512;
+    constexpr i64 file_size = data_size * sizeof(DataPoint);
+
+    std::vector<DataPoint> data;
+    data.resize(data_size);
+
+    std::ifstream data_file("data/el3.bin", std::ios_base::binary);
+    ASSERT_MSG(data_file, "[Application::load_data()] Unable to open file");
+
+    data_file.read(reinterpret_cast<char*>(data.data()), file_size);
+    std::cout << data.at(0).pos.x << std::endl;
+    data_file.close();
 }
 
 void Application::main_loop()

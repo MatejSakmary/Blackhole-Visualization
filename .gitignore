@@ -6,6 +6,7 @@ imgui.ini
 *.exr
 
 data/*
+!data/main.cpp
 !data/.gitkeep
 
 .idea

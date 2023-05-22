@@ -56,6 +56,7 @@ struct Application
 
         void ui_update();
         void process_input();
+        void load_data();
 
         void mouse_callback(f64 x, f64 y);
         void mouse_button_callback(i32 button, i32 action, i32 mods);
