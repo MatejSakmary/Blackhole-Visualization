@@ -231,6 +231,11 @@ void Renderer::record_main_tasklist()
         &context 
     });
 
+    tl.add_task(ImGuiTask{{ 
+        .uses = { ._swapchain = context.images.swapchain.handle(), }},
+        &context
+    });
+
     tl.submit({});
     tl.present({});
     tl.complete({});

@@ -48,7 +48,7 @@ struct DrawFieldTask : DrawFieldTaskBase
             {{
                 .image_view = {uses._swapchain.view()},
                 .load_op = daxa::AttachmentLoadOp::CLEAR,
-                .clear_value = std::array<f32, 4>{0.1, 0.1, 0.1, 1.0}
+                .clear_value = std::array<f32, 4>{0.03f, 0.03f, 0.03f, 1.0f}
             }},
             .depth_attachment = 
             {{

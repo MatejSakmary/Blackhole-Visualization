@@ -15,6 +15,7 @@
 
 #include "tasks/upload_data.inl"
 #include "tasks/draw_field.inl"
+#include "tasks/draw_imgui.inl"
 
 using namespace daxa::types;
 
