@@ -27,7 +27,18 @@ inline auto get_draw_field_pipeline(Context const & context) -> daxa::RasterPipe
             .compile_options = compile_options
         },
         .fragment_shader_info = daxa::ShaderCompileInfo{ .source = daxa::ShaderFile{"draw_field.glsl"}, },
-        .color_attachments = {{.format = context.swapchain.get_format()}},
+        .color_attachments = {{
+            .format = context.swapchain.get_format(),
+            .blend = {
+                .blend_enable = true,
+                .src_color_blend_factor = daxa::BlendFactor::SRC_ALPHA,
+                .dst_color_blend_factor = daxa::BlendFactor::ONE_MINUS_SRC_ALPHA,
+                .color_blend_op = daxa::BlendOp::ADD,
+                .src_alpha_blend_factor = daxa::BlendFactor::ONE,
+                .dst_alpha_blend_factor = daxa::BlendFactor::ONE,
+                .alpha_blend_op = daxa::BlendOp::ADD
+            }
+        }},
         .depth_test = { 
             .depth_attachment_format = daxa::Format::D32_SFLOAT,
             .enable_depth_test = true,
@@ -56,7 +67,8 @@ struct DrawFieldTask : DrawFieldTaskBase
             {{
                 .image_view = {uses._swapchain.view()},
                 .load_op = daxa::AttachmentLoadOp::CLEAR,
-                .clear_value = std::array<f32, 4>{0.03f, 0.03f, 0.03f, 1.0f}
+                // .clear_value = std::array<f32, 4>{0.03f, 0.03f, 0.03f, 1.0f}
+                .clear_value = std::array<f32, 4>{0.00f, 0.00f, 0.00f, 1.0f}
             }},
             .depth_attachment = 
             {{

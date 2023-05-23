@@ -41,8 +41,7 @@ struct GetProjectionInfo
 
 struct CameraInfo
 {
-    f32vec3 position;
-    f32vec3 front;
+    f32vec3 focus_point;
     f32vec3 up;
     f32 aspect_ratio;
     f32 fov;
@@ -63,20 +62,26 @@ struct Camera
     explicit Camera(const CameraInfo & info);
 
     void move_camera(f32 delta_time, Direction direction);
+    void rotate_on_mouse(f32 x_offset, f32 y_offset);
+    void zoom_on_scroll(f32 offset);
     void update_front_vector(f32 x_offset, f32 y_offset);
     void set_position(f32vec3 new_position);
     [[nodiscard]] auto get_camera_position() const -> f32vec3;
     [[nodiscard]] auto get_view_matrix() const -> f32mat4x4;
     [[nodiscard]] auto get_projection_matrix(const GetProjectionInfo & info) const -> f32mat4x4;
     [[nodiscard]] auto get_inv_view_proj_matrix(const GetProjectionInfo & info) const -> f32mat4x4;
-    [[nodiscard]] auto get_frustum_info() const -> CameraFrustumInfo;
 
     private:
         glm::vec3 position;
-        glm::vec3 front;
+        glm::vec3 focus_point;
         glm::vec3 up;
         f32 pitch;
         f32 speed;
         f32 sensitivity;
+        f32 zoom_sensitivity;
+        f32 rotate_sensitivity;
         f32 roll_sensitivity;
+        f32 dist;
+        f32 horizontal_angle;
+        f32 vertical_angle;
 };

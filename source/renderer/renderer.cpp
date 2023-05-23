@@ -85,15 +85,18 @@ void Renderer::resize()
     record_main_tasklist();
 }
 
-void Renderer::set_field_size(f32vec3 min, f32vec3 max)
+void Renderer::set_field_size(f32vec3 min, f32vec3 max, f32 min_mag, f32 max_mag)
 {
     context.buffers.globals_cpu.min_values = min;
     context.buffers.globals_cpu.max_values = max;
+    context.buffers.globals_cpu.min_magnitude = min_mag;
+    context.buffers.globals_cpu.max_magnitude = max_mag;
 }
 
 void Renderer::update(const GuiState & state)
 {
     context.sample_count = state.num_samples;
+    context.buffers.globals_cpu.magnitude_threshold = state.min_magnitude_threshold;
 
     if(context.random_sampling != state.random_sampling)
     {

@@ -20,16 +20,40 @@ void Application::mouse_callback(f64 x, f64 y)
         state.first_input = false;
     }
 
-    if(state.fly_cam)
+    ImGuiIO & io = ImGui::GetIO();
+    if(state.key_table.bits.LMB)
     {
-        state.last_mouse_pos = {f32(x), f32(y)};
-        camera.update_front_vector(x_offset, y_offset);
+        io.AddMouseButtonEvent(GLFW_MOUSE_BUTTON_LEFT, true);
+        if(!io.WantCaptureMouse)
+        {
+            state.last_mouse_pos = {f32(x), f32(y)};
+            camera.rotate_on_mouse(x_offset, y_offset);
+        }
+    }else{
+        state.first_input = true;
     }
+}
+
+void Application::mouse_scroll_callback(f64 x, f64 y)
+{
+    camera.zoom_on_scroll(y);
 }
 
 void Application::mouse_button_callback(i32 button, i32 action, i32 mods)
 {
-
+    if(action == GLFW_PRESS || action == GLFW_RELEASE)
+    {
+        auto update_state = [](i32 action) -> unsigned int
+        {
+            if(action == GLFW_PRESS) return 1;
+            return 0;
+        };
+        switch(button)
+        {
+            case GLFW_MOUSE_BUTTON_LEFT: state.key_table.bits.LMB = update_state(action); return;
+            default: break;
+        }
+    }
 }
 
 void Application::window_resize_callback(i32 width, i32 height)
@@ -90,6 +114,8 @@ Application::Application() :
     WindowVTable {
         .mouse_pos_callback = [this](const f64 x, const f64 y)
             {this->mouse_callback(x, y);},
+        .mouse_scroll_callback = [this](const f64 x, const f64 y)
+            {this->mouse_scroll_callback(x, y);},
         .mouse_button_callback = [this](const i32 button, const i32 action, const i32 mods)
             {this->mouse_button_callback(button, action, mods);},
         .key_callback = [this](const i32 key, const i32 code, const i32 action, const i32 mods)
@@ -100,8 +126,7 @@ Application::Application() :
     state{ .minimized = false },
     renderer{window},
     camera{{
-        .position = {0.0, 0.0, 0.0},
-        .front = {0.0, 1.0, 0.0},
+        .focus_point = {0.847, -1.997, 0.0},
         .up = {0.0, 0.0, 1.0}, 
         .aspect_ratio = f32(INIT_WINDOW_DIMENSIONS.x)/f32(INIT_WINDOW_DIMENSIONS.y),
         .fov = glm::radians(70.0f)
@@ -142,6 +167,11 @@ void Application::ui_update()
     u32 min = 100u;
     u32 max = 1'000'000u;
     ImGui::SliderScalar("number of samples", ImGuiDataType_U32, &state.gui_state.num_samples, &min, &max);
+    ImGui::SliderFloat(
+        "Min magnitude threshold",
+        &state.gui_state.min_magnitude_threshold,
+        state.gui_state.min_max_magnitude.x,
+        state.gui_state.min_max_magnitude.y);
     ImGui::Checkbox("Use random sampling", &state.gui_state.random_sampling);
     ImGui::End();
 
@@ -172,8 +202,8 @@ void Application::load_data()
     constexpr i64 data_size = 512 * 512 * 512;
     constexpr i64 file_size = data_size * sizeof(DataPoint);
 
-    std::ifstream data_file("data/data_bin/el1.bin", std::ios_base::binary);
-    std::ifstream sizes_file("data/data_bin/el1_min_max.txt");
+    std::ifstream data_file("data/data_bin/el2.bin", std::ios_base::binary);
+    std::ifstream sizes_file("data/data_bin/el2_min_max.txt");
     ASSERT_MSG(data_file, "[Application::load_data()] Unable to open data file");
     ASSERT_MSG(sizes_file, "[Application::load_data()] Unable to open sizes file");
 
@@ -182,8 +212,11 @@ void Application::load_data()
 
     f32vec3 min_size;
     f32vec3 max_size;
+    f32 min_magnitude;
+    f32 max_magnitue;
     char *next_token;
     char *token = strtok_s(const_cast<char*>(line.c_str()), " ", &next_token); 
+    // Min max sizes of render area
     min_size.x = std::stof(std::string(token)); 
     token = strtok_s(nullptr, " ", &next_token); 
     max_size.x = std::stof(std::string(token)); 
@@ -195,8 +228,17 @@ void Application::load_data()
     min_size.z = std::stof(std::string(token)); 
     token = strtok_s(nullptr, " ", &next_token); 
     max_size.z = std::stof(std::string(token)); 
+
+    // min max magnitudes
+    token = strtok_s(nullptr, " ", &next_token); 
+    min_magnitude = std::stof(std::string(token)); 
+    token = strtok_s(nullptr, " ", &next_token); 
+    max_magnitue = std::stof(std::string(token)); 
+
     sizes_file.close();
-    renderer.set_field_size(min_size, max_size);
+    renderer.set_field_size(min_size, max_size, min_magnitude, max_magnitue);
+    state.gui_state.min_max_magnitude.x = min_magnitude;
+    state.gui_state.min_max_magnitude.y = max_magnitue;
 
     data_file.read(reinterpret_cast<char*>(renderer.get_field_data_staging_pointer(file_size)), file_size);
     data_file.close();

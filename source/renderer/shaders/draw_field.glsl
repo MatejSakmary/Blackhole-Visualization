@@ -42,28 +42,48 @@ void main()
     f32vec4 origin_pos = f32vec4(x_pos, y_pos, z_pos, 1.0);
     // origin_pos.xyz *= 20.0;
 
-
-
     magnitude = length(val);
-    // if(magnitude < 0.8)
-    // {
-    //     gl_Position = f32vec4(10.0, 10.0, 10.0, 10.0);
-    //     return;
-    // }
+    if(magnitude < deref(_globals).magnitude_threshold)
+    {
+        gl_Position = f32vec4(10.0, 10.0, 10.0, 10.0);
+        return;
+    }
     if(is_start)
     {
         gl_Position = deref(_globals).projection * deref(_globals).view * origin_pos;
     } else {
-        gl_Position = deref(_globals).projection * deref(_globals).view * (origin_pos + (val * (100.0/(512.0))));
+        gl_Position = deref(_globals).projection * deref(_globals).view * (origin_pos + (val / (3 * deref(_globals).max_magnitude)));
     }
 }
 #elif DAXA_SHADER_STAGE == DAXA_SHADER_STAGE_FRAGMENT
 layout (location = 0) in f32 magnitude;
 layout (location = 0) out f32vec4 out_color;
 
+f32vec3 urgb_to_frgb(u32vec3 urgb)
+{
+    return f32vec3(urgb)/255.0;
+}
+
 void main()
 {
-    out_color = f32vec4(magnitude/10, 0.0, 0.0, 1.0);
-    // out_color = f32vec4(1.0, 0.0, 0.0, 1.0);
+    f32 interplocation_value = (magnitude - deref(_globals).min_magnitude) / deref(_globals).max_magnitude;
+    f32vec3 color1 = urgb_to_frgb(u32vec3(255, 237, 160));
+    f32vec3 color2 = urgb_to_frgb(u32vec3(254, 178, 76));
+    f32vec3 color3 = urgb_to_frgb(u32vec3(240, 59, 32));
+    f32vec3 final_color;
+    if(interplocation_value < 0.333)
+    {
+        final_color = mix(color1, color2, interplocation_value * 3.0);
+    } else {
+        final_color = f32vec3(interplocation_value, interplocation_value, interplocation_value);
+    }
+    // out_color = f32vec4(final_color, max(pow((magnitude - 0.1)/2.0, 5), 0.01));
+    // out_color = f32vec4(interplocation_value, interplocation_value, interplocation_value, max(pow(interplocation_value, 5), 0.2));
+    // out_color = f32vec4(final_color, 0.15);
+    // if(pow(interplocation_value, 2) < 0.05)
+    // {
+    //     discard;
+    // }
+    out_color = f32vec4(interplocation_value, interplocation_value, interplocation_value, interplocation_value);
 }
 #endif

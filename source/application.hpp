@@ -24,6 +24,7 @@ union KeyTable
         unsigned int CTRL : 1 = 0;
         unsigned int SPACE : 1 = 0;
         unsigned int LEFT_SHIFT : 1 = 0;
+        unsigned int LMB : 1 = 0;
     } bits;
 };
 struct Application 
@@ -59,6 +60,7 @@ struct Application
         void load_data();
 
         void mouse_callback(f64 x, f64 y);
+        void mouse_scroll_callback(f64 x, f64 y);
         void mouse_button_callback(i32 button, i32 action, i32 mods);
         void key_callback(i32 key, i32 code, i32 action, i32 mods);
         void window_resize_callback(i32 width, i32 height);

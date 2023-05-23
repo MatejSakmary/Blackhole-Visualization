@@ -19,6 +19,7 @@ using namespace daxa::types;
 struct WindowVTable
 {
     std::function<void(f64, f64)> mouse_pos_callback;
+    std::function<void(f64, f64)> mouse_scroll_callback;
     std::function<void(i32, i32, i32)> mouse_button_callback;
     std::function<void(i32, i32, i32, i32)> key_callback;
     std::function<void(i32, i32)> window_resized_callback;
@@ -58,6 +59,14 @@ struct AppWindow
                 {
                     auto &vtable = *reinterpret_cast<WindowVTable *>(glfwGetWindowUserPointer(window_));
                     vtable.key_callback(key, code, action, mods);
+                }
+            );
+            glfwSetScrollCallback(
+                window,
+                [](GLFWwindow *window_, f64 x, f64 y)
+                {
+                    auto &vtable = *reinterpret_cast<WindowVTable *>(glfwGetWindowUserPointer(window_));
+                    vtable.mouse_scroll_callback(x, y);
                 }
             );
             glfwSetFramebufferSizeCallback( 
