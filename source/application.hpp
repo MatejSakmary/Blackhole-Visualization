@@ -38,8 +38,8 @@ struct Application
         bool first_input = true;
         f32vec2 last_mouse_pos;
 
-        KeyTable key_table;
-        GuiState gui_state;
+        KeyTable key_table = {};
+        GuiState gui_state = {};
     };
 
     public:

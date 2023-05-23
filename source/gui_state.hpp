@@ -7,4 +7,6 @@ using namespace daxa::types;
 
 struct GuiState
 {
+    bool random_sampling = true;
+    u32 num_samples = 10000;
 };

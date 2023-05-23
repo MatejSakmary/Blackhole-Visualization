@@ -93,6 +93,14 @@ void Renderer::set_field_size(f32vec3 min, f32vec3 max)
 
 void Renderer::update(const GuiState & state)
 {
+    context.sample_count = state.num_samples;
+
+    if(context.random_sampling != state.random_sampling)
+    {
+        context.pipeline_manager.remove_raster_pipeline(context.pipelines.draw_field);
+        context.pipelines.draw_field = context.pipeline_manager.add_raster_pipeline(get_draw_field_pipeline(context)).value();
+        context.random_sampling = state.random_sampling;
+    }
 }
 
 void Renderer::draw(const Camera & camera) 

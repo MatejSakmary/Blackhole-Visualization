@@ -54,6 +54,7 @@ struct Context
         TransientBuffers transient_buffers;
         TransientImages transient_images;
         std::array<bool, Conditionals::COUNT> conditionals;
+
     };
 
     daxa::Context daxa_context;
@@ -63,6 +64,9 @@ struct Context
     daxa::ImGuiRenderer imgui_renderer;
 
     daxa::SamplerId linear_sampler;
+    u32 sample_count;
+
+    bool random_sampling = true;
 
     Buffers buffers;
     Images images;

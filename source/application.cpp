@@ -133,12 +133,16 @@ void Application::ui_update()
     ImGui::Begin("DockSpace Demo", nullptr, window_flags);
     ImGui::PopStyleVar(3);
     ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
-    ImGui::End();    
+    ImGui::End();
 
     ImGui::Begin("Camera info");
     auto camera_position = camera.get_camera_position();
 
-    ImGui::Text("Camera position is x: %f y: %f z: %f", camera_position.x, camera_position.y, camera_position.z);
+    ImGui::Text("Camera position is \n\t x: %f \n\t y: %f \n\t z: %f", camera_position.x, camera_position.y, camera_position.z);
+    u32 min = 100u;
+    u32 max = 1'000'000u;
+    ImGui::SliderScalar("number of samples", ImGuiDataType_U32, &state.gui_state.num_samples, &min, &max);
+    ImGui::Checkbox("Use random sampling", &state.gui_state.random_sampling);
     ImGui::End();
 
     ImGui::Render();
