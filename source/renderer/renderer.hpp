@@ -29,6 +29,7 @@ struct Renderer
     void draw(const Camera & camera);
 
     auto get_field_data_staging_pointer(u32 size) -> DataPoint*;
+    void set_field_size(f32vec3 min, f32vec3 max);
 
     private:
         Context context;

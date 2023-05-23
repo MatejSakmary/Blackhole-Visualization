@@ -100,7 +100,7 @@ Application::Application() :
     state{ .minimized = false },
     renderer{window},
     camera{{
-        .position = {0.0, 0.0, 6361.0},
+        .position = {0.0, 0.0, 0.0},
         .front = {0.0, 1.0, 0.0},
         .up = {0.0, 0.0, 1.0}, 
         .aspect_ratio = f32(INIT_WINDOW_DIMENSIONS.x)/f32(INIT_WINDOW_DIMENSIONS.y),
@@ -168,8 +168,31 @@ void Application::load_data()
     constexpr i64 data_size = 512 * 512 * 512;
     constexpr i64 file_size = data_size * sizeof(DataPoint);
 
-    std::ifstream data_file("data/data_bin/el2.bin", std::ios_base::binary);
-    ASSERT_MSG(data_file, "[Application::load_data()] Unable to open file");
+    std::ifstream data_file("data/data_bin/el1.bin", std::ios_base::binary);
+    std::ifstream sizes_file("data/data_bin/el1_min_max.txt");
+    ASSERT_MSG(data_file, "[Application::load_data()] Unable to open data file");
+    ASSERT_MSG(sizes_file, "[Application::load_data()] Unable to open sizes file");
+
+    std::string line;
+    std::getline(sizes_file, line);
+
+    f32vec3 min_size;
+    f32vec3 max_size;
+    char *next_token;
+    char *token = strtok_s(const_cast<char*>(line.c_str()), " ", &next_token); 
+    min_size.x = std::stof(std::string(token)); 
+    token = strtok_s(nullptr, " ", &next_token); 
+    max_size.x = std::stof(std::string(token)); 
+    token = strtok_s(nullptr, " ", &next_token); 
+    min_size.y = std::stof(std::string(token)); 
+    token = strtok_s(nullptr, " ", &next_token); 
+    max_size.y = std::stof(std::string(token)); 
+    token = strtok_s(nullptr, " ", &next_token); 
+    min_size.z = std::stof(std::string(token)); 
+    token = strtok_s(nullptr, " ", &next_token); 
+    max_size.z = std::stof(std::string(token)); 
+    sizes_file.close();
+    renderer.set_field_size(min_size, max_size);
 
     data_file.read(reinterpret_cast<char*>(renderer.get_field_data_staging_pointer(file_size)), file_size);
     data_file.close();

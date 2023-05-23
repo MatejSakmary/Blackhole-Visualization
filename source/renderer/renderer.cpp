@@ -34,6 +34,7 @@ Renderer::Renderer(const AppWindow & window) :
                 "shared"
             },
             .language = daxa::ShaderLanguage::GLSL,
+            .enable_debug_info = true
         },
         .name = "Pipeline Compiler",
     });
@@ -82,6 +83,12 @@ void Renderer::resize()
 
     create_resolution_dependent_resources();
     record_main_tasklist();
+}
+
+void Renderer::set_field_size(f32vec3 min, f32vec3 max)
+{
+    context.buffers.globals_cpu.min_values = min;
+    context.buffers.globals_cpu.max_values = max;
 }
 
 void Renderer::update(const GuiState & state)
@@ -220,8 +227,16 @@ void Renderer::record_main_tasklist()
         }
     });
 
+    tl.add_task(UploadGlobalsTask{{
+        .uses = {
+            ._globals = context.buffers.globals.handle()
+        }},
+        &context
+    });
+
     tl.add_task(DrawFieldTask{{
         .uses = {
+            ._globals = context.buffers.globals.handle(),
             ._field_data = context.buffers.field_data.handle(),
             ._swapchain = context.images.swapchain.handle(),
             ._depth = context.main_task_list.transient_images.depth_buffer.subslice(
@@ -246,5 +261,6 @@ Renderer::~Renderer()
     context.device.wait_idle();
     ImGui_ImplGlfw_Shutdown();
     context.device.destroy_buffer(context.buffers.globals.get_state().buffers[0]);
+    context.device.destroy_buffer(context.buffers.field_data.get_state().buffers[0]);
     context.device.collect_garbage();
 }

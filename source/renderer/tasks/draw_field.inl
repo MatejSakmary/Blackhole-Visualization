@@ -6,6 +6,7 @@
 #include "../shared/shared.inl"
 
 DAXA_INL_TASK_USE_BEGIN(DrawFieldTaskBase, DAXA_CBUFFER_SLOT0)
+DAXA_INL_TASK_USE_BUFFER(_globals, daxa_BufferPtr(Globals), VERTEX_SHADER_READ)
 DAXA_INL_TASK_USE_BUFFER(_field_data, daxa_BufferPtr(DataPoint), VERTEX_SHADER_READ)
 DAXA_INL_TASK_USE_IMAGE(_swapchain, daxa_Image2Du32, COLOR_ATTACHMENT)
 DAXA_INL_TASK_USE_IMAGE(_depth, daxa_Image2Df32, DEPTH_ATTACHMENT)
@@ -42,7 +43,6 @@ struct DrawFieldTask : DrawFieldTaskBase
 
         auto dimensions = context->swapchain.get_surface_extent();
 
-        cmd_list.set_constant_buffer(ti.uses.constant_buffer_set_info());
         cmd_list.begin_renderpass({
             .color_attachments = 
             {{
@@ -60,9 +60,11 @@ struct DrawFieldTask : DrawFieldTaskBase
             }},
             .render_area = {.x = 0, .y = 0, .width = dimensions.x , .height = dimensions.y}
         });
+        cmd_list.set_constant_buffer(ti.uses.constant_buffer_set_info());
 
         cmd_list.set_pipeline(*(context->pipelines.draw_field));
-        cmd_list.draw({.vertex_count = 0, .instance_count = 1, .first_vertex = 0, .first_instance = 0});
+        cmd_list.draw({.vertex_count = 512 * 512 * 512 * 2, .instance_count = 1, .first_vertex = 0, .first_instance = 0});
+        // cmd_list.draw({.vertex_count = 1, .instance_count = 1, .first_vertex = 0, .first_instance = 0});
         cmd_list.end_renderpass();
     }
 };
