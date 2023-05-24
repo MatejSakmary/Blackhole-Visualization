@@ -10,7 +10,8 @@ struct Globals
     daxa_f32vec3 min_values;
     daxa_f32vec3 max_values;
 
-    daxa_f32 magnitude_threshold;
+    daxa_f32 min_magnitude_threshold;
+    daxa_f32 max_magnitude_threshold;
     daxa_f32 min_magnitude;
     daxa_f32 max_magnitude;
 

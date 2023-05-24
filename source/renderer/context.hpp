@@ -69,6 +69,7 @@ struct Context
     bool random_sampling = true;
     bool use_transparency = true;
     bool flat_transparency = false;
+    bool inside_interval = true;
 
     Buffers buffers;
     Images images;

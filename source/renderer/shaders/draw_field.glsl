@@ -41,14 +41,24 @@ void main()
     f32 z_pos = mix(deref(_globals).min_values.z, deref(_globals).max_values.z, f32(z_coord)/512.0);
 
     f32vec4 origin_pos = f32vec4(x_pos, y_pos, z_pos, 1.0);
-    // origin_pos.xyz *= 20.0;
 
     magnitude = length(val);
-    if(magnitude < deref(_globals).magnitude_threshold)
+#if defined(INSIDE_INTERVAL)
+    if(magnitude < deref(_globals).min_magnitude_threshold ||
+       magnitude > deref(_globals).max_magnitude_threshold)
     {
         gl_Position = f32vec4(10.0, 10.0, 10.0, 10.0);
         return;
     }
+#elif defined(OUTSIDE_INTERVAL)
+    if(magnitude > deref(_globals).min_magnitude_threshold &&
+       magnitude < deref(_globals).max_magnitude_threshold)
+    {
+        gl_Position = f32vec4(10.0, 10.0, 10.0, 10.0);
+        return;
+    }
+#endif //OUTSIDE_INTERVAL
+
     if(is_start)
     {
         gl_Position = deref(_globals).projection * deref(_globals).view * origin_pos;

@@ -134,6 +134,7 @@ Application::Application() :
         .fov = glm::radians(70.0f)
     }}
 {
+    state.gui_state.load_color_preset(0);
     load_data();
 }
 
@@ -170,12 +171,22 @@ void Application::ui_update()
     u32 max = 1'000'000u;
     ImGui::Text("number of samples:");
     ImGui::SliderScalar(" ", ImGuiDataType_U32, &state.gui_state.num_samples, &min, &max);
+    ImGui::Checkbox("View inside interval", &state.gui_state.view_inside_interval);
     ImGui::Text("min magnitude threshold: ");
     ImGui::SliderFloat(
         "  ",
         &state.gui_state.min_magnitude_threshold,
         state.gui_state.min_max_magnitude.x,
         state.gui_state.min_max_magnitude.y);
+
+    ImGui::Text("max magnitude threshold: ");
+    ImGui::SliderFloat(
+        "   ",
+        &state.gui_state.max_magnitude_threshold,
+        state.gui_state.min_max_magnitude.x,
+        state.gui_state.min_max_magnitude.y);
+
+    state.gui_state.max_magnitude_threshold = std::max(state.gui_state.max_magnitude_threshold, state.gui_state.min_magnitude_threshold);
 
     ImGui::Checkbox("Use random sampling", &state.gui_state.random_sampling);
     // ========================================== TRANSPARENCY SETTINGS ========================================================
@@ -209,6 +220,12 @@ void Application::ui_update()
 
     // ========================================== GRADIENT SETTINGS ===========================================================
     ImGui::Separator();
+    const char* items[] = { "YlOrRd", "YlGnBu", "OrRd"};
+    static i32 curr_index = 0;
+
+    ImGui::Text("Presets");
+    if(ImGui::Combo("##combo", &curr_index, items, 3)){ state.gui_state.load_color_preset(curr_index); }
+
     ImGui::Text("Gradient Colors");
     u32 min_colors = 1u;
     ImGui::SliderScalar("Count", ImGuiDataType_U32, &state.gui_state.num_gradient_colors, &min_colors, &state.gui_state.max_colors);
@@ -315,6 +332,7 @@ void Application::load_data()
     renderer.set_field_size(min_size, max_size, min_magnitude, max_magnitue);
     state.gui_state.min_max_magnitude.x = min_magnitude;
     state.gui_state.min_max_magnitude.y = max_magnitue;
+    state.gui_state.max_magnitude_threshold = max_magnitue;
 
     data_file.read(reinterpret_cast<char*>(renderer.get_field_data_staging_pointer(file_size)), file_size);
     data_file.close();

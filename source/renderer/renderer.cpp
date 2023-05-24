@@ -102,12 +102,15 @@ void Renderer::update(const GuiState & state)
         if(context.random_sampling) { defines += "#define RANDOM_SAMPLING\n"; } 
         else                        { defines += "#define GRID_SAMPLING\n"; }
         if(context.flat_transparency) { defines += "#define FLAT_TRANSPARENCY\n"; } 
+        if(context.inside_interval) { defines += "#define INSIDE_INTERVAL\n"; } 
+        else                        { defines += "#define OUTSIDE_INTERVAL\n"; }
         context.pipeline_manager.add_virtual_include_file({ .name = "virtual_defines.glsl", .contents = defines});
     };
 
     context.sample_count = state.num_samples;
     auto & globals = context.buffers.globals_cpu;
-    globals.magnitude_threshold = state.min_magnitude_threshold;
+    globals.min_magnitude_threshold = state.min_magnitude_threshold;
+    globals.max_magnitude_threshold = state.max_magnitude_threshold;
     globals.flat_transparency_value = state.flat_transparency_value;
     globals.mag_transparency_pow = state.mag_transparency_pow;
     std::copy(state.colors, state.colors + state.max_colors, globals.colors);
@@ -123,6 +126,11 @@ void Renderer::update(const GuiState & state)
     if(context.flat_transparency != state.flat_transparency)
     {
         context.flat_transparency = state.flat_transparency;
+        shader_needs_compilation = true;
+    }
+    if(context.inside_interval != state.view_inside_interval)
+    {
+        context.inside_interval = state.view_inside_interval;
         shader_needs_compilation = true;
     }
 
