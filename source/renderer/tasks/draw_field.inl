@@ -59,7 +59,6 @@ struct DrawFieldTask : DrawFieldTaskBase
             {{
                 .image_view = {uses._swapchain.view()},
                 .load_op = daxa::AttachmentLoadOp::CLEAR,
-                // .clear_value = std::array<f32, 4>{0.03f, 0.03f, 0.03f, 1.0f}
                 .clear_value = std::array<f32, 4>{0.00f, 0.00f, 0.00f, 1.0f}
             }},
             .depth_attachment = 
@@ -75,7 +74,22 @@ struct DrawFieldTask : DrawFieldTaskBase
         cmd_list.set_constant_buffer(ti.uses.constant_buffer_set_info());
 
         cmd_list.set_pipeline(*(context->pipelines.draw_field));
-        cmd_list.draw({.vertex_count = context->sample_count * 2, .instance_count = 1, .first_vertex = 0, .first_instance = 0});
+        if(context->random_sampling)
+        {
+            cmd_list.draw({
+                .vertex_count = context->sample_count * 2,
+                .instance_count = 1,
+                .first_vertex = 0,
+                .first_instance = 0
+            });
+        } else {
+            cmd_list.draw({
+                .vertex_count = (512 * 512 * 512 * 2) / (context->buffers.globals_cpu.uniform_sampling_step),
+                .instance_count = 1,
+                .first_vertex = 0,
+                .first_instance = 0
+            });
+        }
         cmd_list.end_renderpass();
     }
 };

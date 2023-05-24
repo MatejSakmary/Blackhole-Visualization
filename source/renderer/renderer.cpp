@@ -41,7 +41,10 @@ Renderer::Renderer(const AppWindow & window) :
 
     context.main_task_list.conditionals.fill(false);
     
-    context.pipeline_manager.add_virtual_include_file({ .name = "virtual_defines.glsl", .contents = "#define RANDOM_SAMPLING" });
+    context.pipeline_manager.add_virtual_include_file({
+        .name = "virtual_defines.glsl", 
+        .contents = "#define RANDOM_SAMPLING\n#define INSIDE_INTERVAL" 
+    });
     context.pipelines.draw_field = context.pipeline_manager.add_raster_pipeline(get_draw_field_pipeline(context)).value();
 
     ImGui::CreateContext();
@@ -113,6 +116,7 @@ void Renderer::update(const GuiState & state)
     globals.max_magnitude_threshold = state.max_magnitude_threshold;
     globals.flat_transparency_value = state.flat_transparency_value;
     globals.mag_transparency_pow = state.mag_transparency_pow;
+    globals.uniform_sampling_step = state.uniform_sampling_step;
     std::copy(state.colors, state.colors + state.max_colors, globals.colors);
     std::copy(state.gradient_thresholds, state.gradient_thresholds + state.max_colors, globals.thresholds);
     globals.num_colors = state.num_gradient_colors;
@@ -166,6 +170,7 @@ void Renderer::draw(const Camera & camera)
         context.main_task_list.conditionals.data(),
         context.main_task_list.conditionals.size()}
     });
+
     auto result = context.pipeline_manager.reload_all();
     if(result.has_value()) 
     {

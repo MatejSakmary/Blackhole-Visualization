@@ -23,6 +23,7 @@ struct GuiState
     f32 gradient_thresholds[max_colors] = {};
 
     u32 num_samples = 10000;
+    u32 uniform_sampling_step = 1000;
     f32vec2 min_max_magnitude = {};
     f32 min_magnitude_threshold = 0.0f;
     f32 max_magnitude_threshold = 0.0f;
@@ -59,8 +60,8 @@ struct GuiState
         f32 threshold = 0;
         for(int i = 0; i < num_gradient_colors; i++)
         {
-            gradient_thresholds[i] = threshold;
             threshold += 0.2;
+            gradient_thresholds[i] = threshold;
         }
         std::copy(presets.at(index).begin(), presets.at(index).end(), colors);
     }

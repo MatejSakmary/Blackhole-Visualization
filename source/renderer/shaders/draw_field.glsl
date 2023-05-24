@@ -23,10 +23,13 @@ void main()
 {
     bool is_start = (gl_VertexIndex & 1) == 0;
 #if defined(GRID_SAMPLING)
-    u32 x_coord = u32((gl_VertexIndex / 2)               & ((1 << 9) - 1));
-    u32 y_coord = u32((gl_VertexIndex / (2 * 512))       & ((1 << 9) - 1));
-    u32 z_coord = u32( gl_VertexIndex / (2 * 512 * 512));
-    f32vec4 val = f32vec4(deref(_field_data[u32(gl_VertexIndex / 2.0)]).val, 0.0); 
+    u32 step_mult_vert_idx = (gl_VertexIndex & (~1)) * deref(_globals).uniform_sampling_step;
+    u32 x_coord = u32((step_mult_vert_idx / 2)               & ((1 << 9) - 1));
+    u32 y_coord = u32((step_mult_vert_idx / (2 * 512))       & ((1 << 9) - 1));
+    u32 z_coord = u32( step_mult_vert_idx / (2 * 512 * 512));
+    f32vec4 val = f32vec4(deref(_field_data[u32(step_mult_vert_idx / 2.0)]).val, 0.0); 
+    // debugPrintfEXT("x: %d ,y: %d, z: %d\n", x_coord, y_coord, z_coord);
+    // f32vec4 val = f32vec4(0.0, 0.0, 1.0, 0.0);
 #elif defined(RANDOM_SAMPLING)
     rng_state = gl_VertexIndex / 2;
     u32 x_coord = rand_pcg() % 512;
@@ -78,10 +81,10 @@ f32vec3 urgb_to_frgb(u32vec3 urgb)
 void main()
 {
     f32 interpolation_value = (magnitude - deref(_globals).min_magnitude) / deref(_globals).max_magnitude;
-    u32 index = 0;
+    i32 index = 0;
     f32 lower_threshold = 0.0;
     f32 upper_threshold = 0.0;
-    for(u32 i = 0; i < deref(_globals).num_colors; i++)
+    for(i32 i = 0; i < deref(_globals).num_colors; i++)
     {
         lower_threshold = upper_threshold;
         upper_threshold = deref(_globals).thresholds[i];
@@ -93,7 +96,7 @@ void main()
     }
     f32 range = upper_threshold - lower_threshold;
     f32 rescaled_interpolation_value = (interpolation_value - lower_threshold) / range;
-    f32vec3 final_color = mix(deref(_globals).colors[index], deref(_globals).colors[index + 1], rescaled_interpolation_value);
+    f32vec3 final_color = mix(deref(_globals).colors[max(index - 1, 0)], deref(_globals).colors[index], rescaled_interpolation_value);
     // out_color = f32vec4(final_color, max(pow((magnitude - 0.1)/2.0, 5), 0.01));
     // out_color = f32vec4(interplocation_value, interplocation_value, interplocation_value, max(pow(interplocation_value, 5), 0.2));
     // out_color = f32vec4(final_color, 0.15);

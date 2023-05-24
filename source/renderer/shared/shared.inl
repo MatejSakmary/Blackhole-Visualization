@@ -16,6 +16,7 @@ struct Globals
     daxa_f32 max_magnitude;
 
     daxa_f32 num_colors;
+    daxa_u32 uniform_sampling_step;
     daxa_f32vec3 colors[5];
     daxa_f32 thresholds[5];
 

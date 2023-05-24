@@ -189,6 +189,11 @@ void Application::ui_update()
     state.gui_state.max_magnitude_threshold = std::max(state.gui_state.max_magnitude_threshold, state.gui_state.min_magnitude_threshold);
 
     ImGui::Checkbox("Use random sampling", &state.gui_state.random_sampling);
+    if(state.gui_state.random_sampling) {ImGui::BeginDisabled();}
+        u32 min_step = 100u;
+        u32 max_step = 100000u;
+        ImGui::SliderScalar("##slider", ImGuiDataType_U32, &state.gui_state.uniform_sampling_step, &min_step, &max_step);
+    if(state.gui_state.random_sampling) {ImGui::EndDisabled();}
     // ========================================== TRANSPARENCY SETTINGS ========================================================
     ImGui::Checkbox("Use transparency", &state.gui_state.use_transparency);
     if(!state.gui_state.use_transparency) { ImGui::BeginDisabled(); }
