@@ -41,6 +41,7 @@ Renderer::Renderer(const AppWindow & window) :
 
     context.main_task_list.conditionals.fill(false);
     
+    context.pipeline_manager.add_virtual_include_file({ .name = "virtual_defines.glsl", .contents = "#define RANDOM_SAMPLING" });
     context.pipelines.draw_field = context.pipeline_manager.add_raster_pipeline(get_draw_field_pipeline(context)).value();
 
     ImGui::CreateContext();
@@ -95,14 +96,42 @@ void Renderer::set_field_size(f32vec3 min, f32vec3 max, f32 min_mag, f32 max_mag
 
 void Renderer::update(const GuiState & state)
 {
-    context.sample_count = state.num_samples;
-    context.buffers.globals_cpu.magnitude_threshold = state.min_magnitude_threshold;
+    auto recompile_shader = [&]()
+    {
+        std::string defines;
+        if(context.random_sampling) { defines += "#define RANDOM_SAMPLING\n"; } 
+        else                        { defines += "#define GRID_SAMPLING\n"; }
+        if(context.flat_transparency) { defines += "#define FLAT_TRANSPARENCY\n"; } 
+        context.pipeline_manager.add_virtual_include_file({ .name = "virtual_defines.glsl", .contents = defines});
+    };
 
+    context.sample_count = state.num_samples;
+    auto & globals = context.buffers.globals_cpu;
+    globals.magnitude_threshold = state.min_magnitude_threshold;
+    globals.flat_transparency_value = state.flat_transparency_value;
+    globals.mag_transparency_pow = state.mag_transparency_pow;
+    std::copy(state.colors, state.colors + state.max_colors, globals.colors);
+    std::copy(state.gradient_thresholds, state.gradient_thresholds + state.max_colors, globals.thresholds);
+    globals.num_colors = state.num_gradient_colors;
+
+    bool shader_needs_compilation = false;
     if(context.random_sampling != state.random_sampling)
     {
+        context.random_sampling = state.random_sampling;
+        shader_needs_compilation = true;
+    }
+    if(context.flat_transparency != state.flat_transparency)
+    {
+        context.flat_transparency = state.flat_transparency;
+        shader_needs_compilation = true;
+    }
+
+    if(shader_needs_compilation) {recompile_shader();}
+    if(context.use_transparency != state.use_transparency)
+    {
+        context.use_transparency = state.use_transparency;
         context.pipeline_manager.remove_raster_pipeline(context.pipelines.draw_field);
         context.pipelines.draw_field = context.pipeline_manager.add_raster_pipeline(get_draw_field_pipeline(context)).value();
-        context.random_sampling = state.random_sampling;
     }
 }
 

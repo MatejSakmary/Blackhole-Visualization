@@ -67,6 +67,8 @@ struct Context
     u32 sample_count;
 
     bool random_sampling = true;
+    bool use_transparency = true;
+    bool flat_transparency = false;
 
     Buffers buffers;
     Images images;

@@ -1,6 +1,7 @@
 #define DAXA_ENABLE_SHADER_NO_NAMESPACE 1
 #include <shared/shared.inl>
 #include "tasks/draw_field.inl"
+#include "virtual_defines.glsl"
 #extension GL_EXT_debug_printf : enable
 
 #if DAXA_SHADER_STAGE == DAXA_SHADER_STAGE_VERTEX
@@ -66,24 +67,34 @@ f32vec3 urgb_to_frgb(u32vec3 urgb)
 
 void main()
 {
-    f32 interplocation_value = (magnitude - deref(_globals).min_magnitude) / deref(_globals).max_magnitude;
-    f32vec3 color1 = urgb_to_frgb(u32vec3(255, 237, 160));
-    f32vec3 color2 = urgb_to_frgb(u32vec3(254, 178, 76));
-    f32vec3 color3 = urgb_to_frgb(u32vec3(240, 59, 32));
-    f32vec3 final_color;
-    if(interplocation_value < 0.333)
+    f32 interpolation_value = (magnitude - deref(_globals).min_magnitude) / deref(_globals).max_magnitude;
+    u32 index = 0;
+    f32 lower_threshold = 0.0;
+    f32 upper_threshold = 0.0;
+    for(u32 i = 0; i < deref(_globals).num_colors; i++)
     {
-        final_color = mix(color1, color2, interplocation_value * 3.0);
-    } else {
-        final_color = f32vec3(interplocation_value, interplocation_value, interplocation_value);
+        lower_threshold = upper_threshold;
+        upper_threshold = deref(_globals).thresholds[i];
+        if(interpolation_value < upper_threshold && interpolation_value > lower_threshold)
+        {
+            index = i;
+            break;
+        }
     }
+    f32 range = upper_threshold - lower_threshold;
+    f32 rescaled_interpolation_value = (interpolation_value - lower_threshold) / range;
+    f32vec3 final_color = mix(deref(_globals).colors[index], deref(_globals).colors[index + 1], rescaled_interpolation_value);
     // out_color = f32vec4(final_color, max(pow((magnitude - 0.1)/2.0, 5), 0.01));
     // out_color = f32vec4(interplocation_value, interplocation_value, interplocation_value, max(pow(interplocation_value, 5), 0.2));
     // out_color = f32vec4(final_color, 0.15);
-    // if(pow(interplocation_value, 2) < 0.05)
-    // {
-    //     discard;
-    // }
-    out_color = f32vec4(interplocation_value, interplocation_value, interplocation_value, interplocation_value);
+#if defined(FLAT_TRANSPARENCY)
+    out_color = f32vec4(final_color, deref(_globals).flat_transparency_value);
+#else 
+    out_color = f32vec4(final_color, pow(interpolation_value, deref(_globals).mag_transparency_pow));
+#endif // FLAT_TRANSPARENCY
+    if(out_color.w < 0.001)
+    {
+        discard;
+    }
 }
-#endif
+#endif // DAXA_SHADER_STAGE_FRAGMENT

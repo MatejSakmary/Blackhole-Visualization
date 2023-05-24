@@ -5,6 +5,7 @@
 #include "renderer/context.hpp"
 
 #include <fstream>
+#include <algorithm>
 
 void Application::mouse_callback(f64 x, f64 y)
 {
@@ -126,7 +127,8 @@ Application::Application() :
     state{ .minimized = false },
     renderer{window},
     camera{{
-        .focus_point = {0.847, -1.997, 0.0},
+        // .focus_point = {0.847, -1.997, 0.0},
+        .focus_point = {0.0, 0.0, 0.0},
         .up = {0.0, 0.0, 1.0}, 
         .aspect_ratio = f32(INIT_WINDOW_DIMENSIONS.x)/f32(INIT_WINDOW_DIMENSIONS.y),
         .fov = glm::radians(70.0f)
@@ -163,16 +165,90 @@ void Application::ui_update()
     ImGui::Begin("Camera info");
     auto camera_position = camera.get_camera_position();
 
-    ImGui::Text("Camera position is \n\t x: %f \n\t y: %f \n\t z: %f", camera_position.x, camera_position.y, camera_position.z);
+    ImGui::Text("Camera position is: \n\t x: %f \n\t y: %f \n\t z: %f", camera_position.x, camera_position.y, camera_position.z);
     u32 min = 100u;
     u32 max = 1'000'000u;
-    ImGui::SliderScalar("number of samples", ImGuiDataType_U32, &state.gui_state.num_samples, &min, &max);
+    ImGui::Text("number of samples:");
+    ImGui::SliderScalar(" ", ImGuiDataType_U32, &state.gui_state.num_samples, &min, &max);
+    ImGui::Text("min magnitude threshold: ");
     ImGui::SliderFloat(
-        "Min magnitude threshold",
+        "  ",
         &state.gui_state.min_magnitude_threshold,
         state.gui_state.min_max_magnitude.x,
         state.gui_state.min_max_magnitude.y);
+
     ImGui::Checkbox("Use random sampling", &state.gui_state.random_sampling);
+    // ========================================== TRANSPARENCY SETTINGS ========================================================
+    ImGui::Checkbox("Use transparency", &state.gui_state.use_transparency);
+    if(!state.gui_state.use_transparency) { ImGui::BeginDisabled(); }
+    {
+        ImGui::Checkbox("Use flat transparency", &state.gui_state.flat_transparency);
+        if(ImGui::IsItemDeactivatedAfterEdit()) {state.gui_state.magnitude_transparency = false;}
+        if(!state.gui_state.flat_transparency){ImGui::BeginDisabled(); }
+        {
+            ImGui::InputFloat("Value", &state.gui_state.flat_transparency_value, 0.05f, 0.1f);
+            state.gui_state.flat_transparency_value = std::max(std::min(state.gui_state.flat_transparency_value, 1.0f), 0.0f);
+        }
+        if(!state.gui_state.flat_transparency){ImGui::EndDisabled(); }
+        ImGui::Checkbox("Magnitude transparency", &state.gui_state.magnitude_transparency);
+        if(ImGui::IsItemDeactivatedAfterEdit()) {state.gui_state.flat_transparency = false;}
+        if(!state.gui_state.magnitude_transparency){ImGui::BeginDisabled(); }
+        {
+            ImGui::InputFloat("Pow", &state.gui_state.mag_transparency_pow, 0.05f, 0.1f);
+            state.gui_state.mag_transparency_pow = std::max(state.gui_state.mag_transparency_pow, 0.0f);
+        }
+        if(!state.gui_state.magnitude_transparency){ImGui::EndDisabled(); }
+    }
+    if(!state.gui_state.use_transparency) { ImGui::EndDisabled(); }
+
+    if(!state.gui_state.use_transparency) 
+    { 
+        state.gui_state.flat_transparency = false;
+        state.gui_state.magnitude_transparency = false;
+    }
+
+    // ========================================== GRADIENT SETTINGS ===========================================================
+    ImGui::Separator();
+    ImGui::Text("Gradient Colors");
+    u32 min_colors = 1u;
+    ImGui::SliderScalar("Count", ImGuiDataType_U32, &state.gui_state.num_gradient_colors, &min_colors, &state.gui_state.max_colors);
+    for(u32 i = 0; i < state.gui_state.num_gradient_colors; i++)
+    {
+        ImGui::ColorEdit3(
+            std::string("Color " + std::to_string(i)).c_str(),
+            reinterpret_cast<float*>(&state.gui_state.colors[i])
+        );
+        ImGui::SliderFloat(
+            std::string("Threshold " + std::to_string(i)).c_str(), 
+            &state.gui_state.gradient_thresholds[i],
+            0.0, 1.0);
+        f32 min_value = i == 0 ? 0.0f : state.gui_state.gradient_thresholds[i - 1];
+        state.gui_state.gradient_thresholds[i] = std::max(min_value, state.gui_state.gradient_thresholds[i]);
+    }
+    state.gui_state.gradient_thresholds[state.gui_state.num_gradient_colors - 1] = 1.0;
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+    i32vec2 full_width_size = i32vec2{static_cast<i32>(ImGui::CalcItemWidth()), static_cast<i32>(ImGui::GetFrameHeight())};
+    ImVec2 p0 = ImGui::GetCursorScreenPos();
+    ImVec2 p1 = ImVec2(p0.x + state.gui_state.gradient_thresholds[0] * full_width_size.x, p0.y + full_width_size.y);
+    auto const & col0 = state.gui_state.colors[0];
+    auto const & col1 = state.gui_state.num_gradient_colors == 1 ? state.gui_state.colors[0] : state.gui_state.colors[1];
+    ImU32 col_a = ImGui::GetColorU32(IM_COL32(u32(col0.x * 255), u32(col0.y * 255), u32(col0.z * 255), 255));
+    ImU32 col_b = ImGui::GetColorU32(IM_COL32(u32(col1.x * 255), u32(col1.y * 255), u32(col1.z * 255), 255));
+    draw_list->AddRectFilledMultiColor(p0, p1, col_a, col_b, col_b, col_a);
+
+    for(int i = 1; i < state.gui_state.num_gradient_colors; i++)
+    {
+        f32 grad_start = state.gui_state.gradient_thresholds[i - 1];
+        f32 grad_end = state.gui_state.gradient_thresholds[i];
+        p0.x = p1.x;
+        p1.x = p0.x + (grad_end - grad_start) * full_width_size.x;
+        auto const & col0 = state.gui_state.colors[i];
+        auto const & col1 = i == state.gui_state.num_gradient_colors - 1 ? state.gui_state.colors[i] : state.gui_state.colors[i + 1];
+        ImU32 col_a = ImGui::GetColorU32(IM_COL32(u32(col0.x * 255), u32(col0.y * 255), u32(col0.z * 255), 255));
+        ImU32 col_b = ImGui::GetColorU32(IM_COL32(u32(col1.x * 255), u32(col1.y * 255), u32(col1.z * 255), 255));
+        draw_list->AddRectFilledMultiColor(p0, p1, col_a, col_b, col_b, col_a);
+    }
     ImGui::End();
 
     ImGui::Render();
@@ -202,8 +278,8 @@ void Application::load_data()
     constexpr i64 data_size = 512 * 512 * 512;
     constexpr i64 file_size = data_size * sizeof(DataPoint);
 
-    std::ifstream data_file("data/data_bin/el2.bin", std::ios_base::binary);
-    std::ifstream sizes_file("data/data_bin/el2_min_max.txt");
+    std::ifstream data_file("data/data_bin/el1.bin", std::ios_base::binary);
+    std::ifstream sizes_file("data/data_bin/el1_min_max.txt");
     ASSERT_MSG(data_file, "[Application::load_data()] Unable to open data file");
     ASSERT_MSG(sizes_file, "[Application::load_data()] Unable to open sizes file");
 

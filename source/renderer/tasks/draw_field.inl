@@ -16,23 +16,15 @@ DAXA_INL_TASK_USE_END()
 #include "../context.hpp"
 
 inline auto get_draw_field_pipeline(Context const & context) -> daxa::RasterPipelineCompileInfo {
-    daxa::ShaderCompileOptions compile_options;
-    if(context.random_sampling) { compile_options.defines.push_back({"RANDOM_SAMPLING", ""}); }
-    else                        { compile_options.defines.push_back({"GRID_SAMPLING", ""}); }
-
     return {
-        .vertex_shader_info = daxa::ShaderCompileInfo
-        {
-            .source = daxa::ShaderFile{"draw_field.glsl"},
-            .compile_options = compile_options
-        },
+        .vertex_shader_info = daxa::ShaderCompileInfo { .source = daxa::ShaderFile{"draw_field.glsl"}, },
         .fragment_shader_info = daxa::ShaderCompileInfo{ .source = daxa::ShaderFile{"draw_field.glsl"}, },
         .color_attachments = {{
             .format = context.swapchain.get_format(),
             .blend = {
-                .blend_enable = true,
+                .blend_enable = context.use_transparency,
                 .src_color_blend_factor = daxa::BlendFactor::SRC_ALPHA,
-                .dst_color_blend_factor = daxa::BlendFactor::ONE_MINUS_SRC_ALPHA,
+                .dst_color_blend_factor = daxa::BlendFactor::ONE,
                 .color_blend_op = daxa::BlendOp::ADD,
                 .src_alpha_blend_factor = daxa::BlendFactor::ONE,
                 .dst_alpha_blend_factor = daxa::BlendFactor::ONE,
