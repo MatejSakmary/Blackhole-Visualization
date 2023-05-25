@@ -31,6 +31,8 @@ struct ComputeStreamLinesTask : ComputeStreamLinesTaskBase
         cmd_list.set_constant_buffer(ti.uses.constant_buffer_set_info());
         cmd_list.set_pipeline(*(context->pipelines.compute_streamlines));
         cmd_list.dispatch((context->buffers.globals_cpu.streamline_num + 31)/32);
+
+        context->main_task_list.conditionals.at(MainConditionals::GENERATE_STREAMLINES) = false;
     }
 };
 #endif //__cplusplus

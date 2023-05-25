@@ -127,9 +127,6 @@ void Renderer::update(const GuiState & state)
     std::copy(state.gradient_thresholds, state.gradient_thresholds + state.max_colors, globals.thresholds);
     globals.num_colors = state.num_gradient_colors;
 
-    globals.streamline_num = state.streamline_num;
-    globals.streamline_steps = state.streamline_steps;
-
     bool shader_needs_compilation = false;
     if(context.random_sampling != state.random_sampling)
     {
@@ -198,6 +195,11 @@ void Renderer::draw(const Camera & camera)
         context.device.destroy_buffer(context.buffers.field_data_staging.get_state().buffers[0]);
         context.main_task_list.conditionals.at(MainConditionals::UPLOAD_DATA) = false;
     }
+
+    if(context.main_task_list.conditionals.at(MainConditionals::GENERATE_STREAMLINES) == true)
+    {
+        context.main_task_list.conditionals.at(MainConditionals::GENERATE_STREAMLINES) = false;
+    }
 }
 
 void Renderer::create_resolution_dependent_resources()
@@ -212,7 +214,7 @@ void Renderer::create_resolution_dependent_resources()
     });
 }
 
-void Renderer::run_streamline_simulation()
+void Renderer::run_streamline_simulation(u32 streamline_num, u32 streamline_steps)
 {
     if(context.buffers.stream_line_entries.get_state().buffers.size() == 0)
     {
@@ -227,6 +229,8 @@ void Renderer::run_streamline_simulation()
         });
     }
     context.main_task_list.conditionals.at(MainConditionals::GENERATE_STREAMLINES) = true;
+    context.buffers.globals_cpu.streamline_num = streamline_num;
+    context.buffers.globals_cpu.streamline_steps = streamline_steps;
 }
 
 auto Renderer::get_field_data_staging_pointer(u32 size) -> DataPoint*
@@ -327,7 +331,6 @@ void Renderer::record_main_tasklist()
                 }},
                 &context
             });
-            context.main_task_list.conditionals.at(MainConditionals::GENERATE_STREAMLINES) = false;
         }
     });
 

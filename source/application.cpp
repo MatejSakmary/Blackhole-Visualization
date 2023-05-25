@@ -300,7 +300,9 @@ void Application::ui_update()
 
     if(ImGui::Button("Generate streamlines"))
     {
-        renderer.run_streamline_simulation();
+        renderer.run_streamline_simulation(state.gui_state.streamline_num, state.gui_state.streamline_steps);
+    } else {
+
     }
     ImGui::End();
 

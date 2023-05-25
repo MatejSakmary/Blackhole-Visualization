@@ -22,7 +22,24 @@ layout (location = 0) out f32vec4 out_color;
 
 void main()
 {
-    out_color = f32vec4(magnitude, magnitude, magnitude, 1.0);
+    f32 interpolation_value = (magnitude - deref(_globals).min_magnitude) / deref(_globals).max_magnitude;
+    i32 index = 0;
+    f32 lower_threshold = 0.0;
+    f32 upper_threshold = 0.0;
+    for(i32 i = 0; i < deref(_globals).num_colors; i++)
+    {
+        lower_threshold = upper_threshold;
+        upper_threshold = deref(_globals).thresholds[i];
+        if(interpolation_value < upper_threshold && interpolation_value > lower_threshold)
+        {
+            index = i;
+            break;
+        }
+    }
+    f32 range = upper_threshold - lower_threshold;
+    f32 rescaled_interpolation_value = (interpolation_value - lower_threshold) / range;
+    f32vec3 final_color = mix(deref(_globals).colors[max(index - 1, 0)], deref(_globals).colors[index], rescaled_interpolation_value);
+    out_color = f32vec4(final_color, 1.0);
 }
 
 #endif // DAXA_SHADER_STAGE_FRAGMENT

@@ -76,6 +76,7 @@ struct DrawStreamLineTask : DrawStreamLineTaskBase
             .first_vertex = 0,
             .first_instance = 0
         });
+        cmd_list.end_renderpass();
     }
 };
 #endif // __cplusplus
