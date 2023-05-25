@@ -21,6 +21,15 @@ inline auto get_draw_streamline_pipeline(Context const & context) -> daxa::Raste
         .fragment_shader_info = daxa::ShaderCompileInfo { .source = daxa::ShaderFile{"draw_streamlines.glsl"}, },
         .color_attachments = {{
             .format = context.swapchain.get_format(),
+            .blend = {
+                .blend_enable = context.use_transparency,
+                .src_color_blend_factor = daxa::BlendFactor::SRC_ALPHA,
+                .dst_color_blend_factor = daxa::BlendFactor::ONE,
+                .color_blend_op = daxa::BlendOp::ADD,
+                .src_alpha_blend_factor = daxa::BlendFactor::ONE,
+                .dst_alpha_blend_factor = daxa::BlendFactor::ONE,
+                .alpha_blend_op = daxa::BlendOp::ADD
+            }
         }},
         .depth_test = {
             .depth_attachment_format = daxa::Format::D32_SFLOAT,

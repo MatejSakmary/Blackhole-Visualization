@@ -12,7 +12,8 @@ struct GuiState
 {
     static constexpr u32 max_colors = 5u;
     static constexpr u32 num_presets = 3u;
-    static constexpr u32 max_streamline_entries = 40'000'000u;
+    static constexpr u32 max_streamline_entries = 4'000'000u;
+    static constexpr u32 max_streamline_steps = 1'000u;
 
     bool random_sampling = true;
     bool use_transparency = true;
@@ -22,6 +23,7 @@ struct GuiState
 
     bool draw_field = true;
     bool draw_streamlines = false;
+    bool live_preview_streamlines = false;
 
     u32 num_gradient_colors = 3;
     f32vec3 colors [max_colors] = {};

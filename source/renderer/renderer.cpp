@@ -195,11 +195,6 @@ void Renderer::draw(const Camera & camera)
         context.device.destroy_buffer(context.buffers.field_data_staging.get_state().buffers[0]);
         context.main_task_list.conditionals.at(MainConditionals::UPLOAD_DATA) = false;
     }
-
-    if(context.main_task_list.conditionals.at(MainConditionals::GENERATE_STREAMLINES) == true)
-    {
-        context.main_task_list.conditionals.at(MainConditionals::GENERATE_STREAMLINES) = false;
-    }
 }
 
 void Renderer::create_resolution_dependent_resources()

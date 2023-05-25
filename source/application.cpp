@@ -278,6 +278,16 @@ void Application::ui_update()
     // ========================================== STREAMLINES ===============================================================
     ImGui::Separator();
     u32 min_streamlines = 1;
+    ImGui::SliderScalar(
+        "Streamline steps",
+        ImGuiDataType_U32,
+        &state.gui_state.streamline_steps,
+        &min_streamlines,
+        &state.gui_state.max_streamline_steps,
+        (const char *)0,
+        ImGuiSliderFlags_AlwaysClamp
+    );
+
     u32 max_streamlines = GuiState::max_streamline_entries / state.gui_state.streamline_steps;
     ImGui::SliderScalar(
         "Streamline count",
@@ -288,17 +298,11 @@ void Application::ui_update()
         (const char *)0,
         ImGuiSliderFlags_AlwaysClamp
     );
-    ImGui::SliderScalar(
-        "Streamline steps",
-        ImGuiDataType_U32,
-        &state.gui_state.streamline_steps,
-        &min_streamlines,
-        &state.gui_state.max_streamline_entries,
-        (const char *)0,
-        ImGuiSliderFlags_AlwaysClamp
-    );
 
-    if(ImGui::Button("Generate streamlines"))
+    state.gui_state.streamline_num = std::min(state.gui_state.streamline_num, GuiState::max_streamline_entries / state.gui_state.streamline_steps);
+
+    ImGui::Checkbox("Live preview streamlines", &state.gui_state.live_preview_streamlines);
+    if(ImGui::Button("Generate streamlines") || state.gui_state.live_preview_streamlines)
     {
         renderer.run_streamline_simulation(state.gui_state.streamline_num, state.gui_state.streamline_steps);
     } else {

@@ -1,6 +1,7 @@
 #define DAXA_ENABLE_SHADER_NO_NAMESPACE 1
 #include <shared/shared.inl>
 #include "tasks/draw_streamlines.inl"
+#include "virtual_defines.glsl"
 
 #if DAXA_SHADER_STAGE == DAXA_SHADER_STAGE_VERTEX
 layout (location = 0) out f32 magnitude;
@@ -39,7 +40,15 @@ void main()
     f32 range = upper_threshold - lower_threshold;
     f32 rescaled_interpolation_value = (interpolation_value - lower_threshold) / range;
     f32vec3 final_color = mix(deref(_globals).colors[max(index - 1, 0)], deref(_globals).colors[index], rescaled_interpolation_value);
-    out_color = f32vec4(final_color, 1.0);
+#if defined(FLAT_TRANSPARENCY)
+    out_color = f32vec4(final_color, deref(_globals).flat_transparency_value);
+#else 
+    out_color = f32vec4(final_color, pow(interpolation_value, deref(_globals).mag_transparency_pow));
+#endif // FLAT_TRANSPARENCY
+    if(out_color.w < 0.001)
+    {
+        discard;
+    }
 }
 
 #endif // DAXA_SHADER_STAGE_FRAGMENT

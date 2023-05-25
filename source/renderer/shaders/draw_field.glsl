@@ -97,9 +97,6 @@ void main()
     f32 range = upper_threshold - lower_threshold;
     f32 rescaled_interpolation_value = (interpolation_value - lower_threshold) / range;
     f32vec3 final_color = mix(deref(_globals).colors[max(index - 1, 0)], deref(_globals).colors[index], rescaled_interpolation_value);
-    // out_color = f32vec4(final_color, max(pow((magnitude - 0.1)/2.0, 5), 0.01));
-    // out_color = f32vec4(interplocation_value, interplocation_value, interplocation_value, max(pow(interplocation_value, 5), 0.2));
-    // out_color = f32vec4(final_color, 0.15);
 #if defined(FLAT_TRANSPARENCY)
     out_color = f32vec4(final_color, deref(_globals).flat_transparency_value);
 #else 
