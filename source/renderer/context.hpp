@@ -31,6 +31,7 @@ struct Context
     struct Pipelines
     {
         std::shared_ptr<daxa::RasterPipeline> draw_field;
+        std::shared_ptr<daxa::RasterPipeline> draw_streamline_bounding_volume;
         std::shared_ptr<daxa::RasterPipeline> draw_streamlines;
         std::shared_ptr<daxa::ComputePipeline> compute_streamlines;
     };
@@ -76,6 +77,9 @@ struct Context
     bool use_transparency = true;
     bool flat_transparency = false;
     bool inside_interval = true;
+
+    f32vec3 streamline_bb_pos;
+    f32vec3 streamline_bb_scale;
 
     Buffers buffers;
     Images images;

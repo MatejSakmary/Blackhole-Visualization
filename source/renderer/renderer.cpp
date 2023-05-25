@@ -47,6 +47,7 @@ Renderer::Renderer(const AppWindow & window) :
         .contents = "#define RANDOM_SAMPLING\n#define INSIDE_INTERVAL" 
     });
     context.pipelines.compute_streamlines = context.pipeline_manager.add_compute_pipeline(get_compute_streamlines_pipeline()).value();
+    context.pipelines.draw_streamline_bounding_volume = context.pipeline_manager.add_raster_pipeline(get_draw_stream_line_bounding_volume_pipeline(context)).value();
     context.pipelines.draw_streamlines = context.pipeline_manager.add_raster_pipeline(get_draw_streamline_pipeline(context)).value();
     context.pipelines.draw_field = context.pipeline_manager.add_raster_pipeline(get_draw_field_pipeline(context)).value();
 
@@ -117,6 +118,9 @@ void Renderer::update(const GuiState & state)
     context.main_task_list.conditionals.at(MainConditionals::DRAW_STREAMLINES) = state.draw_streamlines;
 
     context.sample_count = state.num_samples;
+    context.streamline_bb_pos = state.streamline_bb_pos;
+    context.streamline_bb_scale = state.streamline_bb_scale;
+
     auto & globals = context.buffers.globals_cpu;
     globals.min_magnitude_threshold = state.min_magnitude_threshold;
     globals.max_magnitude_threshold = state.max_magnitude_threshold;
@@ -209,7 +213,7 @@ void Renderer::create_resolution_dependent_resources()
     });
 }
 
-void Renderer::run_streamline_simulation(u32 streamline_num, u32 streamline_steps)
+void Renderer::run_streamline_simulation(const GuiState & state)
 {
     if(context.buffers.stream_line_entries.get_state().buffers.size() == 0)
     {
@@ -224,8 +228,10 @@ void Renderer::run_streamline_simulation(u32 streamline_num, u32 streamline_step
         });
     }
     context.main_task_list.conditionals.at(MainConditionals::GENERATE_STREAMLINES) = true;
-    context.buffers.globals_cpu.streamline_num = streamline_num;
-    context.buffers.globals_cpu.streamline_steps = streamline_steps;
+    context.buffers.globals_cpu.streamline_num = state.streamline_num;
+    context.buffers.globals_cpu.streamline_steps = state.streamline_steps;
+    context.buffers.globals_cpu.stream_bb_min = state.streamline_bb_pos;
+    context.buffers.globals_cpu.stream_bb_max = state.streamline_bb_pos + state.streamline_bb_scale;
 }
 
 auto Renderer::get_field_data_staging_pointer(u32 size) -> DataPoint*
@@ -351,6 +357,17 @@ void Renderer::record_main_tasklist()
         .condition_index = MainConditionals::DRAW_STREAMLINES,
         .when_true = [&]()
         {
+            tl.add_task(DrawStreamLineBoundingVolumeTask{{
+                .uses = {
+                    ._globals = context.buffers.globals.handle(),
+                    ._swapchain = context.images.swapchain.handle(),
+                    ._depth = context.main_task_list.transient_images.depth_buffer.subslice(
+                        {.image_aspect = daxa::ImageAspectFlagBits::DEPTH}
+                    )
+                }},
+                &context
+            });
+
             tl.add_task(DrawStreamLineTask{{
                 .uses = {
                     ._globals = context.buffers.globals.handle(),

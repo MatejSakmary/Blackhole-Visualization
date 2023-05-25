@@ -6,7 +6,7 @@
 #include "../shared/shared.inl"
 
 DAXA_INL_TASK_USE_BEGIN(DrawFieldTaskBase, DAXA_CBUFFER_SLOT0)
-DAXA_INL_TASK_USE_BUFFER(_globals, daxa_BufferPtr(Globals), VERTEX_SHADER_READ)
+DAXA_INL_TASK_USE_BUFFER(_globals, daxa_BufferPtr(Globals), SHADER_READ)
 DAXA_INL_TASK_USE_BUFFER(_field_data, daxa_BufferPtr(DataPoint), VERTEX_SHADER_READ)
 DAXA_INL_TASK_USE_IMAGE(_swapchain, daxa_Image2Du32, COLOR_ATTACHMENT)
 DAXA_INL_TASK_USE_IMAGE(_depth, daxa_Image2Df32, DEPTH_ATTACHMENT)

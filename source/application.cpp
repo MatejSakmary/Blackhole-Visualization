@@ -299,15 +299,18 @@ void Application::ui_update()
         ImGuiSliderFlags_AlwaysClamp
     );
 
+    ImGui::Text("Bounding box pos: ");
+    ImGui::SliderFloat3("##slider_pos", reinterpret_cast<float*>(&state.gui_state.streamline_bb_pos), -10, 10);
+    ImGui::Text("Bounding box scale: ");
+    ImGui::SliderFloat3("##slider_scale", reinterpret_cast<float*>(&state.gui_state.streamline_bb_scale), -10, 10);
+
     state.gui_state.streamline_num = std::min(state.gui_state.streamline_num, GuiState::max_streamline_entries / state.gui_state.streamline_steps);
 
     ImGui::Checkbox("Live preview streamlines", &state.gui_state.live_preview_streamlines);
     if(ImGui::Button("Generate streamlines") || state.gui_state.live_preview_streamlines)
     {
-        renderer.run_streamline_simulation(state.gui_state.streamline_num, state.gui_state.streamline_steps);
-    } else {
-
-    }
+        renderer.run_streamline_simulation(state.gui_state);
+    }  
     ImGui::End();
 
     ImGui::Render();
@@ -372,6 +375,10 @@ void Application::load_data()
 
     sizes_file.close();
     renderer.set_field_size(min_size, max_size, min_magnitude, max_magnitue);
+    state.gui_state.streamline_bb_pos = min_size;
+    state.gui_state.streamline_bb_scale = max_size - min_size;
+    state.gui_state.min_bounds = min_size;
+    state.gui_state.max_bounds = max_size;
     state.gui_state.min_max_magnitude.x = min_magnitude;
     state.gui_state.min_max_magnitude.y = max_magnitue;
     state.gui_state.max_magnitude_threshold = max_magnitue;

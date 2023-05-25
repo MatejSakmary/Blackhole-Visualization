@@ -15,6 +15,9 @@ struct GuiState
     static constexpr u32 max_streamline_entries = 4'000'000u;
     static constexpr u32 max_streamline_steps = 1'000u;
 
+    f32vec3 min_bounds;
+    f32vec3 max_bounds;
+
     bool random_sampling = true;
     bool use_transparency = true;
     bool flat_transparency = false;
@@ -37,10 +40,10 @@ struct GuiState
     f32 flat_transparency_value = 0.15f;
     f32 mag_transparency_pow = 2.0f;
 
-    // u32 streamline_num = 10000;
-    // u32 streamline_steps = 1000;
     u32 streamline_num = 512;
     u32 streamline_steps = 512;
+    f32vec3 streamline_bb_pos = {0.0, 0.0, 0.0};
+    f32vec3 streamline_bb_scale = {1.0, 1.0, 1.0};
 
     static constexpr std::array<std::array<f32vec3, GuiState::max_colors>, GuiState::num_presets> presets{
         std::array<f32vec3, GuiState::max_colors>{

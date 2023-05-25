@@ -9,6 +9,8 @@ struct Globals
 
     daxa_f32vec3 min_values;
     daxa_f32vec3 max_values;
+    daxa_f32vec3 stream_bb_min;
+    daxa_f32vec3 stream_bb_max;
 
     daxa_f32 min_magnitude_threshold;
     daxa_f32 max_magnitude_threshold;
@@ -41,3 +43,9 @@ struct DataPoint
 DAXA_ENABLE_BUFFER_PTR(Globals)
 DAXA_ENABLE_BUFFER_PTR(StreamLineEntry)
 DAXA_ENABLE_BUFFER_PTR(DataPoint)
+
+struct DrawStreamlineStartVolumePC
+{
+    daxa_f32vec3 position;
+    daxa_f32vec3 scale;
+};
