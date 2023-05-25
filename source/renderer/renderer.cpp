@@ -40,11 +40,14 @@ Renderer::Renderer(const AppWindow & window) :
     });
 
     context.main_task_list.conditionals.fill(false);
+    context.main_task_list.conditionals.at(MainConditionals::DRAW_FIELD) = true;
     
     context.pipeline_manager.add_virtual_include_file({
         .name = "virtual_defines.glsl", 
         .contents = "#define RANDOM_SAMPLING\n#define INSIDE_INTERVAL" 
     });
+    context.pipelines.compute_streamlines = context.pipeline_manager.add_compute_pipeline(get_compute_streamlines_pipeline()).value();
+    context.pipelines.draw_streamlines = context.pipeline_manager.add_raster_pipeline(get_draw_streamline_pipeline(context)).value();
     context.pipelines.draw_field = context.pipeline_manager.add_raster_pipeline(get_draw_field_pipeline(context)).value();
 
     ImGui::CreateContext();
@@ -110,6 +113,9 @@ void Renderer::update(const GuiState & state)
         context.pipeline_manager.add_virtual_include_file({ .name = "virtual_defines.glsl", .contents = defines});
     };
 
+    context.main_task_list.conditionals.at(MainConditionals::DRAW_FIELD) = state.draw_field;
+    context.main_task_list.conditionals.at(MainConditionals::DRAW_STREAMLINES) = state.draw_streamlines;
+
     context.sample_count = state.num_samples;
     auto & globals = context.buffers.globals_cpu;
     globals.min_magnitude_threshold = state.min_magnitude_threshold;
@@ -120,6 +126,9 @@ void Renderer::update(const GuiState & state)
     std::copy(state.colors, state.colors + state.max_colors, globals.colors);
     std::copy(state.gradient_thresholds, state.gradient_thresholds + state.max_colors, globals.thresholds);
     globals.num_colors = state.num_gradient_colors;
+
+    globals.streamline_num = state.streamline_num;
+    globals.streamline_steps = state.streamline_steps;
 
     bool shader_needs_compilation = false;
     if(context.random_sampling != state.random_sampling)
@@ -203,6 +212,23 @@ void Renderer::create_resolution_dependent_resources()
     });
 }
 
+void Renderer::run_streamline_simulation()
+{
+    if(context.buffers.stream_line_entries.get_state().buffers.size() == 0)
+    {
+        context.buffers.stream_line_entries.set_buffers({
+            .buffers = std::array{
+                context.device.create_buffer({
+                    .size = GuiState::max_streamline_entries * sizeof(StreamLineEntry),
+                    .allocate_info = daxa::AutoAllocInfo{daxa::MemoryFlagBits::DEDICATED_MEMORY},
+                    .name = "streamline entries buffer"
+                })
+            },
+        });
+    }
+    context.main_task_list.conditionals.at(MainConditionals::GENERATE_STREAMLINES) = true;
+}
+
 auto Renderer::get_field_data_staging_pointer(u32 size) -> DataPoint*
 {
     context.buffers.field_data_staging.set_buffers({
@@ -240,6 +266,7 @@ void Renderer::create_resolution_independent_resources()
         .name = "persistent swapchain image"
     });
 
+    context.buffers.stream_line_entries = daxa::TaskBuffer({ .name = "stream line entries task buffer"});
     context.buffers.field_data_staging = daxa::TaskBuffer({ .name = "field data staging task buffer"});
     context.buffers.field_data = daxa::TaskBuffer({ .name = "field data task buffer"});
 
@@ -261,13 +288,14 @@ void Renderer::record_main_tasklist()
     auto & tl = context.main_task_list.task_list;
     tl.use_persistent_buffer(context.buffers.globals); 
     tl.use_persistent_buffer(context.buffers.field_data); 
+    tl.use_persistent_buffer(context.buffers.stream_line_entries); 
     tl.use_persistent_buffer(context.buffers.field_data_staging); 
     tl.use_persistent_image(context.images.swapchain);
     /* ============================================================================================================ */
     /* ===============================================  TASKS  ==================================================== */
     /* ============================================================================================================ */
     tl.conditional({
-        .condition_index = 0,
+        .condition_index = MainConditionals::UPLOAD_DATA,
         .when_true = [&]()
         {
             tl.add_task(UploadDataTask{{
@@ -287,16 +315,56 @@ void Renderer::record_main_tasklist()
         &context
     });
 
-    tl.add_task(DrawFieldTask{{
-        .uses = {
-            ._globals = context.buffers.globals.handle(),
-            ._field_data = context.buffers.field_data.handle(),
-            ._swapchain = context.images.swapchain.handle(),
-            ._depth = context.main_task_list.transient_images.depth_buffer.subslice(
-                {.image_aspect = daxa::ImageAspectFlagBits::DEPTH}
-            ),
-        }},
-        &context 
+    tl.conditional({
+        .condition_index = MainConditionals::GENERATE_STREAMLINES,
+        .when_true = [&]()
+        {
+            tl.add_task(ComputeStreamLinesTask{{
+                .uses = {
+                    ._globals = context.buffers.globals.handle(),
+                    ._streamline_entries = context.buffers.stream_line_entries.handle(),
+                    ._field_data = context.buffers.field_data.handle()
+                }},
+                &context
+            });
+            context.main_task_list.conditionals.at(MainConditionals::GENERATE_STREAMLINES) = false;
+        }
+    });
+
+    tl.conditional({
+        .condition_index = MainConditionals::DRAW_FIELD,
+        .when_true = [&]()
+        {
+            tl.add_task(DrawFieldTask{{
+                .uses = {
+                    ._globals = context.buffers.globals.handle(),
+                    ._field_data = context.buffers.field_data.handle(),
+                    ._swapchain = context.images.swapchain.handle(),
+                    ._depth = context.main_task_list.transient_images.depth_buffer.subslice(
+                        {.image_aspect = daxa::ImageAspectFlagBits::DEPTH}
+                    ),
+                }},
+                &context 
+            });
+        }
+    });
+    
+    tl.conditional({
+        .condition_index = MainConditionals::DRAW_STREAMLINES,
+        .when_true = [&]()
+        {
+            tl.add_task(DrawStreamLineTask{{
+                .uses = {
+                    ._globals = context.buffers.globals.handle(),
+                    ._streamline_entries = context.buffers.stream_line_entries.handle(),
+                    ._swapchain = context.images.swapchain.handle(),
+                    ._depth = context.main_task_list.transient_images.depth_buffer.subslice(
+                        {.image_aspect = daxa::ImageAspectFlagBits::DEPTH}
+                    )
+                }},
+                &context
+            });
+        }
     });
 
     tl.add_task(ImGuiTask{{ 

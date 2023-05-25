@@ -14,6 +14,8 @@
 #include "context.hpp"
 
 #include "tasks/upload_data.inl"
+#include "tasks/compute_streamlines.inl"
+#include "tasks/draw_streamlines.inl"
 #include "tasks/draw_field.inl"
 #include "tasks/draw_imgui.inl"
 
@@ -30,6 +32,7 @@ struct Renderer
 
     auto get_field_data_staging_pointer(u32 size) -> DataPoint*;
     void set_field_size(f32vec3 min, f32vec3 max, f32 min_mag, f32 max_mag);
+    void run_streamline_simulation();
 
     private:
         Context context;

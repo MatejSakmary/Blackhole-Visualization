@@ -169,6 +169,8 @@ void Application::ui_update()
     ImGui::Text("Camera position is: \n\t x: %f \n\t y: %f \n\t z: %f", camera_position.x, camera_position.y, camera_position.z);
     u32 min = 100u;
     u32 max = 1'000'000u;
+    ImGui::Checkbox("Draw field", &state.gui_state.draw_field);
+    ImGui::Checkbox("Draw streamlines", &state.gui_state.draw_streamlines);
     ImGui::Text("number of samples:");
     ImGui::SliderScalar(" ", ImGuiDataType_U32, &state.gui_state.num_samples, &min, &max);
     ImGui::Checkbox("View inside interval", &state.gui_state.view_inside_interval);
@@ -270,6 +272,35 @@ void Application::ui_update()
         ImU32 col_a = ImGui::GetColorU32(IM_COL32(u32(col0.x * 255), u32(col0.y * 255), u32(col0.z * 255), 255));
         ImU32 col_b = ImGui::GetColorU32(IM_COL32(u32(col1.x * 255), u32(col1.y * 255), u32(col1.z * 255), 255));
         draw_list->AddRectFilledMultiColor(p0, p1, col_a, col_b, col_b, col_a);
+    }
+    ImGui::Dummy(ImVec2{static_cast<f32>(full_width_size.x), 20.0f});
+
+    // ========================================== STREAMLINES ===============================================================
+    ImGui::Separator();
+    u32 min_streamlines = 1;
+    u32 max_streamlines = GuiState::max_streamline_entries / state.gui_state.streamline_steps;
+    ImGui::SliderScalar(
+        "Streamline count",
+        ImGuiDataType_U32,
+        &state.gui_state.streamline_num,
+        &min_streamlines,
+        &max_streamlines,
+        (const char *)0,
+        ImGuiSliderFlags_AlwaysClamp
+    );
+    ImGui::SliderScalar(
+        "Streamline steps",
+        ImGuiDataType_U32,
+        &state.gui_state.streamline_steps,
+        &min_streamlines,
+        &state.gui_state.max_streamline_entries,
+        (const char *)0,
+        ImGuiSliderFlags_AlwaysClamp
+    );
+
+    if(ImGui::Button("Generate streamlines"))
+    {
+        renderer.run_streamline_simulation();
     }
     ImGui::End();
 

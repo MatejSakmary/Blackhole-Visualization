@@ -10,13 +10,18 @@ using namespace daxa::math_operators;
 
 struct GuiState
 {
-    static constexpr u32 max_colors = 5;
-    static constexpr u32 num_presets = 3;
+    static constexpr u32 max_colors = 5u;
+    static constexpr u32 num_presets = 3u;
+    static constexpr u32 max_streamline_entries = 40'000'000u;
+
     bool random_sampling = true;
     bool use_transparency = true;
     bool flat_transparency = false;
     bool magnitude_transparency = true;
     bool view_inside_interval = true;
+
+    bool draw_field = true;
+    bool draw_streamlines = false;
 
     u32 num_gradient_colors = 3;
     f32vec3 colors [max_colors] = {};
@@ -29,6 +34,11 @@ struct GuiState
     f32 max_magnitude_threshold = 0.0f;
     f32 flat_transparency_value = 0.15f;
     f32 mag_transparency_pow = 2.0f;
+
+    // u32 streamline_num = 10000;
+    // u32 streamline_steps = 1000;
+    u32 streamline_num = 512;
+    u32 streamline_steps = 512;
 
     static constexpr std::array<std::array<f32vec3, GuiState::max_colors>, GuiState::num_presets> presets{
         std::array<f32vec3, GuiState::max_colors>{

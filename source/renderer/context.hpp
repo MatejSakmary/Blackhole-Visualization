@@ -20,6 +20,7 @@ struct Context
         daxa::TaskBuffer globals;
         daxa::TaskBuffer field_data;
         daxa::TaskBuffer field_data_staging;
+        daxa::TaskBuffer stream_line_entries;
     };
 
     struct Images
@@ -30,6 +31,8 @@ struct Context
     struct Pipelines
     {
         std::shared_ptr<daxa::RasterPipeline> draw_field;
+        std::shared_ptr<daxa::RasterPipeline> draw_streamlines;
+        std::shared_ptr<daxa::ComputePipeline> compute_streamlines;
     };
 
     struct MainTaskList
@@ -37,6 +40,9 @@ struct Context
         enum Conditionals 
         {
             UPLOAD_DATA = 0,
+            GENERATE_STREAMLINES = 1,
+            DRAW_FIELD = 2,
+            DRAW_STREAMLINES = 3,
             COUNT
         };
 

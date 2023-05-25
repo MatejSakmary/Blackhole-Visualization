@@ -20,8 +20,17 @@ struct Globals
     daxa_f32vec3 colors[5];
     daxa_f32 thresholds[5];
 
+    daxa_u32 streamline_num;
+    daxa_u32 streamline_steps;
+
     daxa_f32 flat_transparency_value;
     daxa_f32 mag_transparency_pow;
+};
+
+struct StreamLineEntry
+{
+    daxa_f32vec3 pos;
+    daxa_f32 mag;
 };
 
 struct DataPoint
@@ -30,4 +39,5 @@ struct DataPoint
 };
 
 DAXA_ENABLE_BUFFER_PTR(Globals)
+DAXA_ENABLE_BUFFER_PTR(StreamLineEntry)
 DAXA_ENABLE_BUFFER_PTR(DataPoint)
